@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project Command Center
 
-## Getting Started
+A Trello-like dashboard for managing all your projects, calendar, and GitHub repos with client notes and status tracking.
 
-First, run the development server:
+## Features
+
+- **Kanban Board**: Drag-and-drop project cards between columns (Backlog, In Progress, Review, Done)
+- **GitHub Integration**: See last commit, open issues, and PRs for each project
+- **Client Notes**: Track client requirements, expectations, and next steps
+- **Calendar Sidebar**: View events synced from Apple Calendar
+
+## Quick Start
+
+### 1. Set up Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to **SQL Editor** and run the migration files in order:
+   - `supabase/migrations/001_initial_schema.sql` (creates tables + default boards)
+   - `supabase/migrations/002_seed_projects.sql` (seeds your existing projects)
+3. Go to **Project Settings > API** and copy your project URL and anon key
+
+### 2. Configure environment
+
+Copy your Supabase credentials to `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For GitHub integration, create a [Personal Access Token](https://github.com/settings/tokens) with `repo` scope:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+GITHUB_TOKEN=ghp_your_token_here
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Run the app
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Apple Calendar Sync (Optional)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To sync events from Apple Calendar:
 
-## Deploy on Vercel
+1. Install icalBuddy:
+   ```bash
+   brew install ical-buddy
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. Edit `scripts/com.commandcenter.calendar.plist` with your Supabase credentials
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. Install the launch agent:
+   ```bash
+   cp scripts/com.commandcenter.calendar.plist ~/Library/LaunchAgents/
+   launchctl load ~/Library/LaunchAgents/com.commandcenter.calendar.plist
+   ```
+
+Events will sync every 30 minutes.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 + React 19 (App Router)
+- **UI**: Tailwind CSS + shadcn/ui
+- **Drag & Drop**: @hello-pangea/dnd
+- **Database**: Supabase (PostgreSQL)
+- **GitHub**: Octokit
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── page.tsx              # Main dashboard
+│   └── api/
+│       ├── github/sync/      # GitHub sync endpoint
+│       └── calendar/events/  # Calendar API
+├── components/
+│   ├── board/                # Kanban components
+│   ├── project/              # Project modal & widgets
+│   └── calendar/             # Calendar sidebar
+├── hooks/                    # React hooks
+└── lib/                      # Utilities & types
+```
