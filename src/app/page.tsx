@@ -10,6 +10,7 @@ import { Command, Keyboard, Github } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useGamification } from '@/hooks/useGamification';
 import type { GitHubRepo, ProjectFormData, XpEventType } from '@/lib/types';
+import packageJson from '../../package.json';
 
 export default function Home() {
   const [reposPanelOpen, setReposPanelOpen] = useState(false);
@@ -105,6 +106,11 @@ export default function Home() {
         <main className="flex-1 overflow-hidden">
           <KanbanBoard projectsState={projectsState} onXpChange={handleXpChange} />
         </main>
+
+        {/* Version Footer */}
+        <footer className="px-6 py-1.5 border-t border-zinc-800 bg-zinc-900/50 text-xs text-zinc-600 text-right">
+          v{packageJson.version}
+        </footer>
       </div>
 
       {/* Calendar Sidebar */}
