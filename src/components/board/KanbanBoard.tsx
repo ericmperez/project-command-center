@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Plus, Github, FlaskConical, ArrowUpDown } from 'lucide-react';
@@ -36,6 +36,31 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
   const [targetBoardId, setTargetBoardId] = useState<string | null>(null);
   const [sortByMeeting, setSortByMeeting] = useState(false);
   const [activeMobileColumn, setActiveMobileColumn] = useState(0);
+
+  // Swipe gesture handling for mobile column navigation
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only trigger if horizontal swipe is dominant and exceeds threshold
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0) {
+        // Swipe left → next column
+        setActiveMobileColumn((prev) => Math.min(prev + 1, boards.length - 1));
+      } else {
+        // Swipe right → previous column
+        setActiveMobileColumn((prev) => Math.max(prev - 1, 0));
+      }
+    }
+  }, [boards.length]);
 
   // Compute scheduling estimates for all projects
   const allProjects = useMemo(() => boards.flatMap((b) => b.projects), [boards]);
@@ -243,8 +268,12 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
               />
             ))}
           </div>
-          {/* Mobile: single column */}
-          <div className="flex md:hidden h-full">
+          {/* Mobile: single column with swipe */}
+          <div
+            className="flex md:hidden h-full"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {sortedBoards[activeMobileColumn] && (
               <BoardColumn
                 key={sortedBoards[activeMobileColumn].id}
