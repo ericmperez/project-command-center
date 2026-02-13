@@ -3,7 +3,7 @@
 import { Draggable } from '@hello-pangea/dnd';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GitBranch, AlertCircle, GitPullRequest, Clock, Calendar, Timer } from 'lucide-react';
+import { GitBranch, AlertCircle, GitPullRequest, Clock, Calendar, Timer, Flame, Snowflake } from 'lucide-react';
 import { ScheduleBadge } from '@/components/project/ScheduleBadge';
 import type { Project, SchedulingEstimate } from '@/lib/types';
 
@@ -12,6 +12,7 @@ interface ProjectCardProps {
   index: number;
   onClick: () => void;
   schedulingEstimate?: SchedulingEstimate | null;
+  workRank?: 'most' | 'least';
 }
 
 const projectTypeBadgeColors: Record<string, string> = {
@@ -56,12 +57,35 @@ function getMeetingUrgency(dateString: string): string {
   return 'text-zinc-400';
 }
 
-export function ProjectCard({ project, index, onClick, schedulingEstimate }: ProjectCardProps) {
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+const workRankStyles = {
+  most: {
+    border: 'border-l-orange-500',
+    badge: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    label: 'Most active',
+    Icon: Flame,
+  },
+  least: {
+    border: 'border-l-sky-500',
+    badge: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+    label: 'Least active',
+    Icon: Snowflake,
+  },
+};
+
+export function ProjectCard({ project, index, onClick, schedulingEstimate, workRank }: ProjectCardProps) {
   const hasGitHub = !!project.github_repo;
   const lastCommit = project.github_last_commit;
   const hasCompletion = project.completion_percentage > 0;
   const hasTotalTime = project.total_time_seconds > 0;
   const hasNextMeeting = !!project.next_meeting_date;
+  const hasGitHubStats = project.github_commit_count > 0 || project.github_lines_of_code > 0;
+  const rankStyle = workRank ? workRankStyles[workRank] : null;
 
   return (
     <Draggable draggableId={project.id} index={index}>
@@ -79,6 +103,7 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate }: Pro
               hover:ring-2 hover:ring-zinc-600 hover:bg-zinc-800/80
               ${snapshot.isDragging ? 'ring-2 ring-zinc-500 shadow-xl rotate-2' : ''}
               bg-zinc-900 border-zinc-800
+              ${rankStyle ? `border-l-2 ${rankStyle.border}` : ''}
             `}
           >
             {/* Completion progress bar */}
@@ -97,12 +122,23 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate }: Pro
                 <CardTitle className="text-sm font-medium text-zinc-100 leading-tight">
                   {project.title}
                 </CardTitle>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] px-1.5 py-0 shrink-0 ${projectTypeBadgeColors[project.project_type]}`}
-                >
-                  {project.project_type}
-                </Badge>
+                <div className="flex items-center gap-1 shrink-0">
+                  {rankStyle && (
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] px-1.5 py-0 ${rankStyle.badge}`}
+                    >
+                      <rankStyle.Icon className="w-2.5 h-2.5 mr-0.5" />
+                      {rankStyle.label}
+                    </Badge>
+                  )}
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] px-1.5 py-0 ${projectTypeBadgeColors[project.project_type]}`}
+                  >
+                    {project.project_type}
+                  </Badge>
+                </div>
               </div>
 
               {/* Description preview */}
@@ -139,6 +175,23 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate }: Pro
                     <span className={`flex items-center gap-1 ${getMeetingUrgency(project.next_meeting_date!)}`}>
                       <Calendar className="w-3 h-3" />
                       {formatMeetingDate(project.next_meeting_date!)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Commits & LOC stats */}
+              {hasGitHubStats && (
+                <div className="flex items-center gap-3 text-[11px]">
+                  {project.github_commit_count > 0 && (
+                    <span className="flex items-center gap-1 text-zinc-500">
+                      <GitBranch className="w-3 h-3" />
+                      {formatCompact(project.github_commit_count)} commits
+                    </span>
+                  )}
+                  {project.github_lines_of_code > 0 && (
+                    <span className="flex items-center gap-1 text-zinc-500">
+                      {formatCompact(project.github_lines_of_code)} LOC
                     </span>
                   )}
                 </div>

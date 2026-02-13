@@ -30,6 +30,10 @@ export interface Project {
   client_notes: string | null;
   next_steps: string | null;
 
+  // GitHub stats
+  github_commit_count: number;
+  github_lines_of_code: number;
+
   // Cached/denormalized fields
   completion_percentage: number;
   total_time_seconds: number;

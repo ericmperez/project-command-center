@@ -12,6 +12,7 @@ interface BoardColumnProps {
   onAddProject: (boardId: string) => void;
   onSelectProject: (project: Project) => void;
   schedulingEstimates?: Record<string, SchedulingEstimate>;
+  workRanks?: Record<string, 'most' | 'least'>;
   fullWidth?: boolean;
 }
 
@@ -38,7 +39,7 @@ const columnColors: Record<string, { bg: string; border: string; badge: string }
   },
 };
 
-export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEstimates, fullWidth }: BoardColumnProps) {
+export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEstimates, workRanks, fullWidth }: BoardColumnProps) {
   const colors = columnColors[board.name] || columnColors['Backlog'];
   const projectCount = board.projects.length;
 
@@ -87,6 +88,7 @@ export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEs
                   index={index}
                   onClick={() => onSelectProject(project)}
                   schedulingEstimate={schedulingEstimates?.[project.id]}
+                  workRank={workRanks?.[project.id]}
                 />
               ))}
               {provided.placeholder}

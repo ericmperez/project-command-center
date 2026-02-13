@@ -19,6 +19,8 @@ export interface Project {
   position: number;
   client_name: string | null;
   next_steps: string | null;
+  github_commit_count: number;
+  github_lines_of_code: number;
   completion_percentage: number;
   total_time_seconds: number;
   created_at: string;
