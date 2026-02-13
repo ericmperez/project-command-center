@@ -12,6 +12,7 @@ interface BoardColumnProps {
   onAddProject: (boardId: string) => void;
   onSelectProject: (project: Project) => void;
   schedulingEstimates?: Record<string, SchedulingEstimate>;
+  fullWidth?: boolean;
 }
 
 const columnColors: Record<string, { bg: string; border: string; badge: string }> = {
@@ -37,14 +38,15 @@ const columnColors: Record<string, { bg: string; border: string; badge: string }
   },
 };
 
-export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEstimates }: BoardColumnProps) {
+export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEstimates, fullWidth }: BoardColumnProps) {
   const colors = columnColors[board.name] || columnColors['Backlog'];
   const projectCount = board.projects.length;
 
   return (
     <div
       className={`
-        flex flex-col w-72 shrink-0 rounded-lg border
+        flex flex-col rounded-lg border
+        ${fullWidth ? 'w-full' : 'w-72 shrink-0'}
         ${colors.bg} ${colors.border}
       `}
     >
