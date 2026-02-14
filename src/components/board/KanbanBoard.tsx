@@ -81,6 +81,28 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
     return map;
   }, [allProjects]);
 
+  // Compute most/least worked project rankings by commits + lines of code
+  const workRanks = useMemo(() => {
+    const map: Record<string, 'most' | 'least'> = {};
+    if (allProjects.length < 2) return map;
+
+    // Score = commits + LOC (normalized: commits weighted more heavily)
+    const scored = allProjects.map((p) => ({
+      id: p.id,
+      score: p.github_commit_count * 1000 + p.github_lines_of_code,
+    }));
+
+    scored.sort((a, b) => b.score - a.score);
+
+    const most = scored[0];
+    const least = scored[scored.length - 1];
+
+    if (most && most.score > 0) map[most.id] = 'most';
+    if (least && least.id !== most.id) map[least.id] = 'least';
+
+    return map;
+  }, [allProjects]);
+
   // Apply meeting date sort
   const sortedBoards = useMemo(() => {
     if (!sortByMeeting) return boards;
@@ -265,6 +287,7 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
                 onAddProject={handleAddProject}
                 onSelectProject={handleSelectProject}
                 schedulingEstimates={estimates}
+                workRanks={workRanks}
               />
             ))}
           </div>
@@ -281,6 +304,7 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
                 onAddProject={handleAddProject}
                 onSelectProject={handleSelectProject}
                 schedulingEstimates={estimates}
+                workRanks={workRanks}
                 fullWidth
               />
             )}

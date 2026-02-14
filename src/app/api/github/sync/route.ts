@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
       github_last_commit: repoData.lastCommit,
       github_open_issues: repoData.openIssues,
       github_open_prs: repoData.openPRs,
+      github_commit_count: repoData.commitCount,
+      github_lines_of_code: repoData.linesOfCode,
       github_last_synced: new Date().toISOString(),
     });
 
@@ -115,6 +117,8 @@ export async function PUT(request: NextRequest) {
           github_last_commit: repoData.lastCommit,
           github_open_issues: repoData.openIssues,
           github_open_prs: repoData.openPRs,
+          github_commit_count: repoData.commitCount,
+          github_lines_of_code: repoData.linesOfCode,
           github_last_synced: new Date().toISOString(),
         });
 

@@ -12,6 +12,8 @@ export interface GitHubRepoData {
   openIssues: number;
   openPRs: number;
   defaultBranch: string;
+  commitCount: number;
+  linesOfCode: number;
 }
 
 /**
@@ -44,15 +46,28 @@ export async function fetchRepoData(repoString: string): Promise<GitHubRepoData 
   const { owner, repo } = parsed;
 
   try {
-    // Fetch repo info, commits, issues, and PRs in parallel
-    const [repoInfo, commits, issues, prs] = await Promise.all([
+    // Fetch repo info, commits, issues, PRs, and languages in parallel
+    const [repoInfo, commits, issues, prs, languages, contributors] = await Promise.all([
       octokit.rest.repos.get({ owner, repo }),
       octokit.rest.repos.listCommits({ owner, repo, per_page: 1 }),
       octokit.rest.issues.listForRepo({ owner, repo, state: 'open', per_page: 1 }),
       octokit.rest.pulls.list({ owner, repo, state: 'open', per_page: 100 }),
+      octokit.rest.repos.listLanguages({ owner, repo }),
+      octokit.rest.repos.listContributors({ owner, repo, per_page: 100 }),
     ]);
 
     const lastCommit = commits.data[0];
+
+    // Total commits across all contributors
+    const commitCount = Array.isArray(contributors.data)
+      ? contributors.data.reduce((sum, c) => sum + (c.contributions || 0), 0)
+      : 0;
+
+    // Lines of code: sum of bytes from all languages (approximation)
+    const linesOfCode = Object.values(languages.data as Record<string, number>).reduce(
+      (sum, bytes) => sum + bytes,
+      0
+    );
 
     return {
       lastCommit: lastCommit ? {
@@ -65,6 +80,8 @@ export async function fetchRepoData(repoString: string): Promise<GitHubRepoData 
       openIssues: repoInfo.data.open_issues_count - prs.data.length, // Issues count includes PRs
       openPRs: prs.data.length,
       defaultBranch: repoInfo.data.default_branch,
+      commitCount,
+      linesOfCode,
     };
   } catch (error) {
     console.error(`Error fetching repo data for ${repoString}:`, error);

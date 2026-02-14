@@ -115,6 +115,8 @@ export function useProjects() {
       github_open_issues: null,
       github_open_prs: null,
       github_last_synced: null,
+      github_commit_count: 0,
+      github_lines_of_code: 0,
       client_name: data.client_name || null,
       client_notes: data.client_notes || null,
       next_steps: data.next_steps || null,
