@@ -67,9 +67,12 @@ export default function HabitsPage() {
                 <HabitsList
                   habits={habits.habits}
                   completionsToday={habits.completionsToday}
+                  completionLogs={habits.completionLogs}
                   onToggle={habits.toggleCompletion}
                   onCreate={habits.createHabit}
                   onDelete={habits.deleteHabit}
+                  onFetchLog={habits.fetchLog}
+                  onUpdateNotes={habits.updateNotes}
                 />
               </div>
             </>

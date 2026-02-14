@@ -1,17 +1,31 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import type { ChecklistItem } from '../lib/types';
 
 interface ChecklistItemRowProps {
   item: ChecklistItem;
   onToggle: () => void;
+  onDelete?: () => void;
 }
 
-export function ChecklistItemRow({ item, onToggle }: ChecklistItemRowProps) {
+export function ChecklistItemRow({ item, onToggle, onDelete }: ChecklistItemRowProps) {
+  const handleLongPress = () => {
+    if (!onDelete) return;
+    Alert.alert(
+      'Delete Task',
+      `Delete "${item.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ]
+    );
+  };
+
   return (
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={onToggle}
+      onLongPress={handleLongPress}
     >
       <View style={[styles.checkbox, item.is_completed && styles.checkboxChecked]}>
         {item.is_completed && <Text style={styles.checkmark}>✓</Text>}

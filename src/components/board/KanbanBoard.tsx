@@ -3,12 +3,13 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Plus, Github, FlaskConical, ArrowUpDown } from 'lucide-react';
+import { RefreshCw, Plus, Github, FlaskConical } from 'lucide-react';
 import { BoardColumn } from './BoardColumn';
 import { ProjectModal } from '@/components/project/ProjectModal';
 import { useGitHubSync } from '@/hooks/useGitHubSync';
 import { useSchedulingEstimate } from '@/hooks/useSchedulingEstimate';
 import { useProjectActivity } from '@/hooks/useProjectActivity';
+import { sortProjectsByPriority } from '@/lib/priority';
 import type { Project, ProjectFormData, BoardWithProjects, SchedulingEstimate, XpEventType } from '@/lib/types';
 
 interface ProjectsState {
@@ -35,7 +36,6 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetBoardId, setTargetBoardId] = useState<string | null>(null);
-  const [sortByMeeting, setSortByMeeting] = useState(false);
   const [activeMobileColumn, setActiveMobileColumn] = useState(0);
 
   // Swipe gesture handling for mobile column navigation
@@ -69,7 +69,7 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
   const estimates = useMemo(() => {
     const map: Record<string, SchedulingEstimate> = {};
     for (const p of allProjects) {
-      if (p.next_meeting_date || p.estimated_hours_remaining) {
+      if (p.next_meeting_date || p.target_completion_date || p.estimated_hours_remaining) {
         map[p.id] = {
           remainingTasks: 0,
           avgTimePerTask: 0,
@@ -105,22 +105,13 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
     return map;
   }, [allProjects]);
 
-  // Apply meeting date sort
+  // Apply priority sort
   const sortedBoards = useMemo(() => {
-    if (!sortByMeeting) return boards;
-
     return boards.map((board) => ({
       ...board,
-      projects: [...board.projects].sort((a, b) => {
-        if (a.next_meeting_date && !b.next_meeting_date) return -1;
-        if (!a.next_meeting_date && b.next_meeting_date) return 1;
-        if (a.next_meeting_date && b.next_meeting_date) {
-          return new Date(a.next_meeting_date).getTime() - new Date(b.next_meeting_date).getTime();
-        }
-        return a.position - b.position;
-      }),
+      projects: sortProjectsByPriority(board.projects, estimates),
     }));
-  }, [boards, sortByMeeting]);
+  }, [boards, estimates]);
 
   // Handle drag end
   const handleDragEnd = (result: DropResult) => {
@@ -162,8 +153,14 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
 
   // Save project (create or update)
   const handleSaveProject = async (data: ProjectFormData) => {
+    const saveData = {
+      ...data,
+      target_completion_date: data.target_completion_date
+        ? new Date(data.target_completion_date).toISOString()
+        : null,
+    };
     if (selectedProject) {
-      await editProject(selectedProject.id, data);
+      await editProject(selectedProject.id, saveData);
     } else if (targetBoardId) {
       await addProject(targetBoardId, data);
     }
@@ -218,15 +215,6 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
       <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
         <h1 className="text-xl font-bold text-zinc-100">Projects</h1>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSortByMeeting(!sortByMeeting)}
-            className={`text-zinc-400 border-zinc-700 hover:bg-zinc-800 ${sortByMeeting ? 'bg-zinc-800 text-zinc-200' : ''}`}
-          >
-            <ArrowUpDown className="w-4 h-4 mr-1" />
-            {sortByMeeting ? 'Meeting Date' : 'Sort'}
-          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -330,11 +318,13 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
 }
 
 function getStatusFromProject(p: Project): SchedulingEstimate['status'] {
-  if (!p.next_meeting_date) return 'no_deadline';
+  // Use the earlier of next_meeting_date and target_completion_date
+  const deadlines = [p.next_meeting_date, p.target_completion_date].filter(Boolean) as string[];
+  if (deadlines.length === 0) return 'no_deadline';
 
   const now = new Date();
-  const meeting = new Date(p.next_meeting_date);
-  const daysUntil = (meeting.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  const earliest = deadlines.reduce((a, b) => (new Date(a) < new Date(b) ? a : b));
+  const daysUntil = (new Date(earliest).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   const hoursRemaining = p.estimated_hours_remaining || 0;
   const hoursAvailable = daysUntil * 6; // 6 productive hours per day
 

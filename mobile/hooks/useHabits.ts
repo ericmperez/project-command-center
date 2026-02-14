@@ -13,6 +13,7 @@ interface HabitsState {
   habits: Habit[];
   heatmapData: HeatmapDay[];
   completionsToday: Record<string, boolean>;
+  completionLogs: Record<string, HabitCompletion[]>;
   loading: boolean;
 }
 
@@ -21,6 +22,7 @@ export function useHabits() {
     habits: [],
     heatmapData: [],
     completionsToday: {},
+    completionLogs: {},
     loading: true,
   });
 
@@ -63,12 +65,13 @@ export function useHabits() {
         todayMap[row.habit_id] = true;
       }
 
-      setState({
+      setState((prev) => ({
         habits,
         heatmapData,
         completionsToday: todayMap,
+        completionLogs: prev.completionLogs,
         loading: false,
-      });
+      }));
     } catch (err) {
       console.error('useHabits load error:', err);
       setState((prev) => ({ ...prev, loading: false }));
@@ -116,7 +119,7 @@ export function useHabits() {
   );
 
   const toggleCompletion = useCallback(
-    async (habitId: string) => {
+    async (habitId: string, notes?: string) => {
       const today = new Date().toISOString().split('T')[0];
       const wasCompleted = state.completionsToday[habitId];
 
@@ -172,6 +175,7 @@ export function useHabits() {
         await supabase.from('habit_completions').insert({
           habit_id: habitId,
           completed_date: today,
+          ...(notes ? { notes } : {}),
         });
 
         // Award XP
@@ -250,6 +254,47 @@ export function useHabits() {
     [state.completionsToday, loadData]
   );
 
+  const fetchLog = useCallback(
+    async (habitId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('habit_completions')
+          .select('*')
+          .eq('habit_id', habitId)
+          .order('completed_date', { ascending: false });
+
+        if (error) throw error;
+
+        setState((prev) => ({
+          ...prev,
+          completionLogs: {
+            ...prev.completionLogs,
+            [habitId]: (data ?? []) as HabitCompletion[],
+          },
+        }));
+      } catch (err) {
+        console.error('Error fetching completion log:', err);
+      }
+    },
+    []
+  );
+
+  const updateNotes = useCallback(
+    async (completionId: string, habitId: string, notes: string) => {
+      try {
+        await supabase
+          .from('habit_completions')
+          .update({ notes })
+          .eq('id', completionId);
+
+        await fetchLog(habitId);
+      } catch (err) {
+        console.error('Error updating notes:', err);
+      }
+    },
+    [fetchLog]
+  );
+
   const deleteHabitById = useCallback(
     async (habitId: string) => {
       await supabase.from('habits').delete().eq('id', habitId);
@@ -262,6 +307,8 @@ export function useHabits() {
     ...state,
     createHabit,
     toggleCompletion,
+    fetchLog,
+    updateNotes,
     deleteHabit: deleteHabitById,
     refresh: loadData,
   };

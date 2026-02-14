@@ -105,5 +105,41 @@ export function useChecklist(projectId: string) {
     [projectId, items.length, load]
   );
 
-  return { items, loading, toggleItem, addItem, refresh: load };
+  const deleteItem = useCallback(
+    async (itemId: string) => {
+      // Optimistic update
+      setItems((prev) => prev.filter((i) => i.id !== itemId));
+
+      try {
+        const { error } = await supabase
+          .from('checklist_items')
+          .delete()
+          .eq('id', itemId);
+
+        if (error) throw error;
+
+        // Recalculate completion percentage
+        const { data: allItems } = await supabase
+          .from('checklist_items')
+          .select('is_completed')
+          .eq('project_id', projectId);
+
+        const pct =
+          allItems && allItems.length > 0
+            ? Math.round(allItems.filter((i) => i.is_completed).length / allItems.length * 100)
+            : 0;
+
+        await supabase
+          .from('projects')
+          .update({ completion_percentage: pct, updated_at: new Date().toISOString() })
+          .eq('id', projectId);
+      } catch (err) {
+        console.error('deleteItem error:', err);
+        await load(); // Revert by reloading
+      }
+    },
+    [projectId, load]
+  );
+
+  return { items, loading, toggleItem, addItem, deleteItem, refresh: load };
 }

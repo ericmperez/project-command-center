@@ -19,6 +19,7 @@ interface HabitsState {
   habits: Habit[];
   heatmapData: HeatmapDay[];
   completionsToday: Record<string, boolean>;
+  completionLogs: Record<string, HabitCompletion[]>;
   loading: boolean;
 }
 
@@ -27,6 +28,7 @@ export function useHabits() {
     habits: [],
     heatmapData: [],
     completionsToday: {},
+    completionLogs: {},
     loading: true,
   });
   const [demoMode, setDemoMode] = useState(false);
@@ -51,12 +53,13 @@ export function useHabits() {
       }
       const heatmap = Object.entries(counts).map(([date, count]) => ({ date, count }));
 
-      setState({
+      setState((prev) => ({
         habits: demoHabits.filter((h) => !h.is_archived),
         heatmapData: heatmap,
         completionsToday: todayMap,
+        completionLogs: prev.completionLogs,
         loading: false,
-      });
+      }));
       return;
     }
 
@@ -70,12 +73,13 @@ export function useHabits() {
         todayMap[c.habit_id] = true;
       }
 
-      setState({
+      setState((prev) => ({
         habits: data.habits,
         heatmapData: data.heatmapData,
         completionsToday: todayMap,
+        completionLogs: prev.completionLogs,
         loading: false,
-      });
+      }));
     } catch (err) {
       console.error('Error loading habits:', err);
       setDemoMode(true);
@@ -142,7 +146,7 @@ export function useHabits() {
   );
 
   const toggleCompletion = useCallback(
-    async (habitId: string) => {
+    async (habitId: string, notes?: string) => {
       const today = new Date().toISOString().split('T')[0];
 
       if (demoMode) {
@@ -170,6 +174,7 @@ export function useHabits() {
               id: `comp-${Date.now()}`,
               habit_id: habitId,
               completed_date: today,
+              notes: notes || null,
               created_at: new Date().toISOString(),
             },
           ]);
@@ -190,11 +195,76 @@ export function useHabits() {
       await fetch('/api/habits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle', habit_id: habitId, date: today }),
+        body: JSON.stringify({ action: 'toggle', habit_id: habitId, date: today, notes }),
       });
       await loadData();
     },
     [demoMode, state.completionsToday, loadData]
+  );
+
+  const fetchLog = useCallback(
+    async (habitId: string) => {
+      if (demoMode) {
+        const log = demoCompletions
+          .filter((c) => c.habit_id === habitId)
+          .sort((a, b) => b.completed_date.localeCompare(a.completed_date));
+        setState((prev) => ({
+          ...prev,
+          completionLogs: { ...prev.completionLogs, [habitId]: log },
+        }));
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/habits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_log', habit_id: habitId }),
+        });
+        if (!res.ok) throw new Error('Failed to fetch log');
+        const data = await res.json();
+        setState((prev) => ({
+          ...prev,
+          completionLogs: { ...prev.completionLogs, [habitId]: data.completions },
+        }));
+      } catch (err) {
+        console.error('Error fetching completion log:', err);
+      }
+    },
+    [demoMode, demoCompletions]
+  );
+
+  const updateNotes = useCallback(
+    async (completionId: string, habitId: string, notes: string) => {
+      if (demoMode) {
+        setDemoCompletions((prev) =>
+          prev.map((c) => (c.id === completionId ? { ...c, notes } : c))
+        );
+        // Refresh the log
+        setState((prev) => ({
+          ...prev,
+          completionLogs: {
+            ...prev.completionLogs,
+            [habitId]: (prev.completionLogs[habitId] || []).map((c) =>
+              c.id === completionId ? { ...c, notes } : c
+            ),
+          },
+        }));
+        return;
+      }
+
+      try {
+        await fetch('/api/habits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_notes', completion_id: completionId, notes }),
+        });
+        await fetchLog(habitId);
+      } catch (err) {
+        console.error('Error updating notes:', err);
+      }
+    },
+    [demoMode, fetchLog]
   );
 
   const deleteHabitById = useCallback(
@@ -238,6 +308,8 @@ export function useHabits() {
     ...state,
     createHabit,
     toggleCompletion,
+    fetchLog,
+    updateNotes,
     deleteHabit: deleteHabitById,
     updateHabit: updateHabitById,
     refresh: loadData,

@@ -21,6 +21,13 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
+        <Stack.Screen
+          name="project/edit"
+          options={{
+            title: 'New Project',
+            presentation: 'modal',
+          }}
+        />
       </Stack>
     </>
   );

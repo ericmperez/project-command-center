@@ -39,6 +39,7 @@ export default function Home() {
       client_name: '',
       client_notes: '',
       next_steps: '',
+      target_completion_date: '',
     };
 
     await projectsState.addProject(backlogBoard.id, data);

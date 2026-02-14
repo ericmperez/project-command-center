@@ -40,6 +40,7 @@ export interface Project {
   next_meeting_date: string | null;
   estimated_hours_remaining: number | null;
   suggested_start_date: string | null;
+  target_completion_date: string | null;
 
   created_at: string;
   updated_at: string;
@@ -152,6 +153,7 @@ export interface ProjectFormData {
   client_name: string;
   client_notes: string;
   next_steps: string;
+  target_completion_date: string;
 }
 
 // GitHub repo from API
@@ -219,6 +221,7 @@ export interface HabitCompletion {
   id: string;
   habit_id: string;
   completed_date: string; // YYYY-MM-DD
+  notes: string | null;
   created_at: string;
 }
 

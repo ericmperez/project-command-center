@@ -3,7 +3,7 @@
 import { Draggable } from '@hello-pangea/dnd';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GitBranch, AlertCircle, GitPullRequest, Clock, Calendar, Timer, Flame, Snowflake, CornerDownRight, ArrowRight } from 'lucide-react';
+import { GitBranch, AlertCircle, GitPullRequest, Clock, Calendar, Timer, Flame, Snowflake, CornerDownRight, ArrowRight, Target } from 'lucide-react';
 import { ScheduleBadge } from '@/components/project/ScheduleBadge';
 import type { Project, ProjectActivity, SchedulingEstimate } from '@/lib/types';
 
@@ -79,12 +79,27 @@ const workRankStyles = {
   },
 };
 
+function getTargetDateUrgency(dateString: string): string {
+  const now = new Date();
+  const target = new Date(dateString);
+  const daysUntil = (target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  if (daysUntil < 0 || daysUntil < 3) return 'text-red-400';
+  if (daysUntil < 7) return 'text-amber-400';
+  return 'text-zinc-400';
+}
+
+function formatTargetDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export function ProjectCard({ project, index, onClick, schedulingEstimate, workRank, activity }: ProjectCardProps) {
   const hasGitHub = !!project.github_repo;
   const lastCommit = project.github_last_commit;
   const hasCompletion = project.completion_percentage > 0;
   const hasTotalTime = project.total_time_seconds > 0;
   const hasNextMeeting = !!project.next_meeting_date;
+  const hasTargetDate = !!project.target_completion_date;
   const hasGitHubStats = project.github_commit_count > 0 || project.github_lines_of_code > 0;
   const rankStyle = workRank ? workRankStyles[workRank] : null;
 
@@ -96,14 +111,14 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={onClick}
-          className="mb-2"
+          className="mb-2 w-full max-w-full"
         >
           <Card
             className={`
               cursor-pointer transition-all duration-200
               hover:ring-2 hover:ring-zinc-600 hover:bg-zinc-800/80
               ${snapshot.isDragging ? 'ring-2 ring-zinc-500 shadow-xl rotate-2' : ''}
-              bg-zinc-900 border-zinc-800
+              bg-zinc-900 border-zinc-800 overflow-hidden
               ${rankStyle ? `border-l-2 ${rankStyle.border}` : ''}
             `}
           >
@@ -117,10 +132,10 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
               </div>
             )}
 
-            <CardHeader className="p-3 space-y-2">
+            <CardHeader className="p-3 space-y-2 overflow-hidden">
               {/* Header with title and type badge */}
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-sm font-medium text-zinc-100 leading-tight">
+              <div className="flex items-start justify-between gap-2 min-w-0">
+                <CardTitle className="text-sm font-medium text-zinc-100 leading-tight truncate">
                   {project.title}
                 </CardTitle>
                 <div className="flex items-center gap-1 shrink-0">
@@ -163,8 +178,8 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
                 </div>
               )}
 
-              {/* Info row: time + meeting */}
-              {(hasTotalTime || hasNextMeeting) && (
+              {/* Info row: time + meeting + target date */}
+              {(hasTotalTime || hasNextMeeting || hasTargetDate) && (
                 <div className="flex items-center gap-3 text-[11px]">
                   {hasTotalTime && (
                     <span className="flex items-center gap-1 text-zinc-500">
@@ -176,6 +191,12 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
                     <span className={`flex items-center gap-1 ${getMeetingUrgency(project.next_meeting_date!)}`}>
                       <Calendar className="w-3 h-3" />
                       {formatMeetingDate(project.next_meeting_date!)}
+                    </span>
+                  )}
+                  {hasTargetDate && (
+                    <span className={`flex items-center gap-1 ${getTargetDateUrgency(project.target_completion_date!)}`}>
+                      <Target className="w-3 h-3" />
+                      {formatTargetDate(project.target_completion_date!)}
                     </span>
                   )}
                 </div>
@@ -203,10 +224,10 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
 
               {/* GitHub stats row */}
               {hasGitHub && (
-                <div className="flex items-center gap-3 text-[11px] text-zinc-500 pt-1 border-t border-zinc-800">
+                <div className="flex items-center gap-3 text-[11px] text-zinc-500 pt-1 border-t border-zinc-800 overflow-hidden min-w-0">
                   {/* Last commit */}
                   {lastCommit && (
-                    <div className="flex items-center gap-1 truncate">
+                    <div className="flex items-center gap-1 truncate min-w-0 flex-1">
                       <GitBranch className="w-3 h-3 shrink-0" />
                       <span className="truncate">{lastCommit.message}</span>
                     </div>
@@ -232,18 +253,18 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
 
               {/* Activity: Left off + Next step */}
               {activity?.lastActivity || activity?.nextStep ? (
-                <div className="space-y-0.5 pt-0.5">
+                <div className="space-y-0.5 pt-0.5 overflow-hidden">
                   {activity.lastActivity && (
-                    <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+                    <div className="flex items-center gap-1 text-[10px] text-zinc-500 min-w-0">
                       <CornerDownRight className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">{activity.lastActivity.description}</span>
+                      <span className="truncate flex-1 min-w-0">{activity.lastActivity.description}</span>
                       <span className="shrink-0 ml-auto text-zinc-600">{formatTimeAgo(activity.lastActivity.timestamp)}</span>
                     </div>
                   )}
                   {activity.nextStep && (
-                    <div className={`flex items-center gap-1 text-[10px] ${activity.nextStep.type === 'fallback' ? 'text-zinc-600' : 'text-violet-400'}`}>
+                    <div className={`flex items-center gap-1 text-[10px] min-w-0 ${activity.nextStep.type === 'fallback' ? 'text-zinc-600' : 'text-violet-400'}`}>
                       <ArrowRight className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">{activity.nextStep.description}</span>
+                      <span className="truncate flex-1 min-w-0">{activity.nextStep.description}</span>
                     </div>
                   )}
                 </div>

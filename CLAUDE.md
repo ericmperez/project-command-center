@@ -31,8 +31,10 @@ mobile/                       # Expo React Native app
     types.ts                  # Subset of web types (keep in sync with src/lib/types.ts)
     gamification.ts           # Copy of web gamification.ts (pure functions, keep identical)
     format.ts                 # Duration formatting helpers
-  hooks/                      # Mobile hooks (useProjects, useChecklist, useGamification, useTimeSessions)
-  components/                 # XpBar, StatsCard, ProjectCard, ChecklistItemRow
+    scheduling.ts             # Copy of web scheduling.ts (pure functions, keep identical)
+    prompt-generator.ts       # Copy of web prompt-generator.ts (pure functions, keep identical)
+  hooks/                      # Mobile hooks (useProjects, useChecklist, useGamification, useTimeTracking, useMeetings, useCalendar, useProjectActivity)
+  components/                 # XpBar, StatsCard, ProjectCard, ChecklistItemRow, MeetingRow, ScheduleBadge
 
 supabase/
   migrations/                 # SQL migrations (pushed via `supabase db push`)
@@ -67,6 +69,8 @@ All three vars are set on Vercel production environment.
 
 - Root `tsconfig.json` excludes `mobile/` to prevent Next.js build from picking up Expo files
 - `mobile/lib/gamification.ts` is a verbatim copy of `src/lib/gamification.ts` — if you change one, change both
+- `mobile/lib/scheduling.ts` is a verbatim copy of `src/lib/scheduling.ts` — if you change one, change both
+- `mobile/lib/prompt-generator.ts` is a verbatim copy of `src/lib/prompt-generator.ts` — if you change one, change both
 - `mobile/lib/types.ts` is a subset of `src/lib/types.ts` — new types needed by mobile must be added there too
 - Gamification tables require explicit `GRANT ALL ... TO anon, authenticated` in migrations (see `20260208090000_gamification_grants.sql`)
 - Mobile gamification hook does XP award/revoke directly via Supabase (not through API routes)

@@ -9,6 +9,14 @@ export interface Board {
   created_at: string;
 }
 
+export interface GitHubCommit {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+  branch: string;
+}
+
 export interface Project {
   id: string;
   board_id: string;
@@ -17,12 +25,31 @@ export interface Project {
   project_type: ProjectType;
   status: string | null;
   position: number;
+
+  // GitHub integration
+  github_repo: string | null;
+  github_last_commit: GitHubCommit | null;
+  github_open_issues: number | null;
+  github_open_prs: number | null;
+  github_last_synced: string | null;
+
+  // Client/project notes
   client_name: string | null;
+  client_notes: string | null;
   next_steps: string | null;
+
+  // GitHub stats
   github_commit_count: number;
   github_lines_of_code: number;
+
+  // Cached/denormalized fields
   completion_percentage: number;
   total_time_seconds: number;
+  next_meeting_date: string | null;
+  estimated_hours_remaining: number | null;
+  suggested_start_date: string | null;
+  target_completion_date: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +75,45 @@ export interface TimeSession {
   created_at: string;
 }
 
+// Meetings
+export type MeetingStatus = 'upcoming' | 'completed' | 'cancelled';
+
+export interface Meeting {
+  id: string;
+  project_id: string;
+  calendar_event_id: string | null;
+  title: string;
+  client_name: string | null;
+  meeting_date: string;
+  meeting_end: string | null;
+  notes: string | null;
+  status: MeetingStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+// Calendar
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  calendar_name: string | null;
+  project_id: string | null;
+  synced_at: string;
+}
+
+// Scheduling
+export interface SchedulingEstimate {
+  remainingTasks: number;
+  avgTimePerTask: number;
+  estimatedHoursRemaining: number;
+  suggestedStartDate: string | null;
+  nextMeetingDate: string | null;
+  status: 'on_track' | 'behind' | 'at_risk' | 'no_deadline';
+}
+
+// Gamification
 export type XpEventType = 'task_complete' | 'time_session' | 'project_complete' | 'daily_goal_bonus' | 'habit_complete';
 
 export interface GamificationProfile {
@@ -88,12 +154,54 @@ export interface HabitCompletion {
   id: string;
   habit_id: string;
   completed_date: string; // YYYY-MM-DD
+  notes: string | null;
   created_at: string;
 }
 
 export interface HeatmapDay {
   date: string; // YYYY-MM-DD
   count: number;
+}
+
+// Project activity
+export interface ProjectActivity {
+  lastActivity: {
+    type: 'task' | 'time_session' | 'commit';
+    description: string;
+    timestamp: string;
+  } | null;
+  nextStep: {
+    type: 'task' | 'next_steps' | 'meeting' | 'fallback';
+    description: string;
+  } | null;
+}
+
+// Prompt generation
+export interface GeneratedPrompt {
+  label: string;
+  prompt: string;
+}
+
+// Form types
+export interface ProjectFormData {
+  title: string;
+  description: string;
+  project_type: ProjectType;
+  github_repo: string;
+  client_name: string;
+  client_notes: string;
+  next_steps: string;
+  target_completion_date: string;
+}
+
+// Meeting prep
+export interface MeetingPrepData {
+  meetingTitle: string;
+  meetingDate: string;
+  completedTasksSinceLastMeeting: ChecklistItem[];
+  commitsSinceLastMeeting: GitHubCommit[];
+  timeSpentSinceLastMeeting: number;
+  lastMeetingDate: string | null;
 }
 
 export interface BoardWithProjects extends Board {

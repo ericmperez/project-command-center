@@ -125,6 +125,7 @@ export function useProjects() {
       next_meeting_date: null,
       estimated_hours_remaining: null,
       suggested_start_date: null,
+      target_completion_date: data.target_completion_date ? new Date(data.target_completion_date).toISOString() : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -233,6 +234,14 @@ export function useProjects() {
     }
   }, [demoMode]);
 
+  // Map board names to status values
+  const boardNameToStatus: Record<string, string> = {
+    'Backlog': 'backlog',
+    'In Progress': 'in_progress',
+    'Review': 'review',
+    'Done': 'done',
+  };
+
   // Move a project between boards or reorder within a board
   const moveProject = useCallback(async (
     projectId: string,
@@ -248,15 +257,19 @@ export function useProjects() {
 
     if (!sourceBoard || !destBoard) return;
 
+    // Determine the new status based on destination board name
+    const newStatus = boardNameToStatus[destBoard.name] || destBoard.name.toLowerCase().replace(/\s+/g, '_');
+
     // Remove from source
     const [movedProject] = sourceBoard.projects.splice(sourceIndex, 1);
     movedProject.board_id = destBoardId;
+    movedProject.status = newStatus;
 
     // Insert at destination
     destBoard.projects.splice(destIndex, 0, movedProject);
 
     // Update positions for affected projects
-    const updates: { id: string; position: number; board_id: string }[] = [];
+    const updates: { id: string; position: number; board_id: string; status?: string | null }[] = [];
 
     sourceBoard.projects.forEach((p, i) => {
       p.position = i;
@@ -265,7 +278,12 @@ export function useProjects() {
 
     destBoard.projects.forEach((p, i) => {
       p.position = i;
-      updates.push({ id: p.id, position: i, board_id: destBoardId });
+      // Only include status for the moved project
+      if (p.id === projectId) {
+        updates.push({ id: p.id, position: i, board_id: destBoardId, status: newStatus });
+      } else {
+        updates.push({ id: p.id, position: i, board_id: destBoardId });
+      }
     });
 
     // Optimistic update

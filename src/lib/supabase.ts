@@ -137,13 +137,18 @@ export async function moveProject(
 }
 
 export async function updateProjectPositions(
-  updates: { id: string; position: number; board_id: string }[]
+  updates: { id: string; position: number; board_id: string; status?: string | null }[]
 ): Promise<void> {
   // Batch update positions using a transaction-like approach
-  const promises = updates.map(({ id, position, board_id }) =>
+  const promises = updates.map(({ id, position, board_id, status }) =>
     supabase.client
       .from('projects')
-      .update({ position, board_id, updated_at: new Date().toISOString() })
+      .update({ 
+        position, 
+        board_id, 
+        ...(status !== undefined ? { status } : {}),
+        updated_at: new Date().toISOString() 
+      })
       .eq('id', id)
   );
 
@@ -567,7 +572,8 @@ export async function deleteHabit(id: string): Promise<void> {
 
 export async function toggleHabitCompletion(
   habitId: string,
-  date: string
+  date: string,
+  notes?: string
 ): Promise<{ completed: boolean; completion: HabitCompletion | null }> {
   const { data: existing } = await supabase.client
     .from('habit_completions')
@@ -587,13 +593,36 @@ export async function toggleHabitCompletion(
   } else {
     const { data, error } = await supabase.client
       .from('habit_completions')
-      .insert({ habit_id: habitId, completed_date: date })
+      .insert({ habit_id: habitId, completed_date: date, ...(notes ? { notes } : {}) })
       .select()
       .single();
 
     if (error) throw error;
     return { completed: true, completion: data };
   }
+}
+
+export async function getHabitCompletions(habitId: string): Promise<HabitCompletion[]> {
+  const { data, error } = await supabase.client
+    .from('habit_completions')
+    .select('*')
+    .eq('habit_id', habitId)
+    .order('completed_date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateCompletionNotes(completionId: string, notes: string | null): Promise<HabitCompletion> {
+  const { data, error } = await supabase.client
+    .from('habit_completions')
+    .update({ notes })
+    .eq('id', completionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function getHeatmapData(startDate: string, endDate: string): Promise<HeatmapDay[]> {

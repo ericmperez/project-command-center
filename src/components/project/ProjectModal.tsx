@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Github, User, FileText, ArrowRight } from 'lucide-react';
+import { Trash2, Github, User, FileText, ArrowRight, Target } from 'lucide-react';
 import { GitHubWidget } from './GitHubWidget';
 import { SessionNotesTab } from './SessionNotesTab';
 import { PromptGeneratorTab } from './PromptGeneratorTab';
@@ -50,6 +50,7 @@ const defaultFormData: ProjectFormData = {
   client_name: '',
   client_notes: '',
   next_steps: '',
+  target_completion_date: '',
 };
 
 export function ProjectModal({
@@ -83,6 +84,9 @@ export function ProjectModal({
         client_name: project.client_name || '',
         client_notes: project.client_notes || '',
         next_steps: project.next_steps || '',
+        target_completion_date: project.target_completion_date
+          ? new Date(project.target_completion_date).toISOString().split('T')[0]
+          : '',
       });
     } else {
       setFormData(defaultFormData);
@@ -377,6 +381,21 @@ function DetailsFields({
             onChange={(e) => updateField('description', e.target.value)}
             placeholder="Brief description of the project..."
             className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 min-h-[80px]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-zinc-500" />
+            <label className="text-sm font-medium text-zinc-400">
+              Target Completion Date
+            </label>
+          </div>
+          <Input
+            type="date"
+            value={formData.target_completion_date}
+            onChange={(e) => updateField('target_completion_date', e.target.value)}
+            className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
           />
         </div>
       </div>

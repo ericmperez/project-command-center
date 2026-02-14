@@ -47,7 +47,7 @@ export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEs
   return (
     <div
       className={`
-        flex flex-col rounded-lg border
+        flex flex-col rounded-lg border overflow-hidden
         ${fullWidth ? 'w-full' : 'w-72 shrink-0'}
         ${colors.bg} ${colors.border}
       `}
@@ -73,12 +73,12 @@ export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEs
       {/* Droppable Area */}
       <Droppable droppableId={board.id}>
         {(provided, snapshot) => (
-          <ScrollArea className="flex-1 p-2">
+          <ScrollArea className="flex-1 p-2 overflow-hidden">
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
               className={`
-                min-h-[200px] rounded-md transition-colors
+                min-h-[200px] rounded-md transition-colors w-full
                 ${snapshot.isDraggingOver ? 'bg-zinc-800/50' : ''}
               `}
             >

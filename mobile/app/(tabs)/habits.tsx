@@ -17,9 +17,12 @@ export default function HabitsScreen() {
     habits,
     heatmapData,
     completionsToday,
+    completionLogs,
     loading,
     createHabit,
     toggleCompletion,
+    fetchLog,
+    updateNotes,
     refresh,
   } = useHabits();
 
@@ -92,7 +95,12 @@ export default function HabitsScreen() {
                   key={habit.id}
                   habit={habit}
                   completed={completionsToday[habit.id] ?? false}
-                  onToggle={() => toggleCompletion(habit.id)}
+                  completionLog={completionLogs[habit.id]}
+                  onToggle={(notes) => toggleCompletion(habit.id, notes)}
+                  onFetchLog={() => fetchLog(habit.id)}
+                  onUpdateNotes={(completionId, notes) =>
+                    updateNotes(completionId, habit.id, notes)
+                  }
                 />
               ))}
 

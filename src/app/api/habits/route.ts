@@ -8,6 +8,8 @@ import {
   getHeatmapData,
   getTodayCompletions,
   getHabitCompletionDates,
+  getHabitCompletions,
+  updateCompletionNotes,
   createXpEvent,
   deleteXpEventByReference,
   getXpEventByReference,
@@ -59,10 +61,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ habit });
     }
 
+    if (action === 'get_log') {
+      const { habit_id } = body;
+      const completions = await getHabitCompletions(habit_id);
+      return NextResponse.json({ completions });
+    }
+
+    if (action === 'update_notes') {
+      const { completion_id, notes } = body;
+      const completion = await updateCompletionNotes(completion_id, notes);
+      return NextResponse.json({ completion });
+    }
+
     if (action === 'toggle') {
-      const { habit_id, date } = body;
+      const { habit_id, date, notes } = body;
       const today = date || new Date().toISOString().split('T')[0];
-      const result = await toggleHabitCompletion(habit_id, today);
+      const result = await toggleHabitCompletion(habit_id, today, notes);
 
       const referenceId = `habit_${habit_id}_${today}`;
 
