@@ -9,6 +9,7 @@ export const XP_VALUES: Record<XpEventType, number> = {
   time_session: 5,       // per 30-min block
   project_complete: 50,
   daily_goal_bonus: 25,
+  habit_complete: 15,
 };
 
 // ============ Level Thresholds ============
@@ -135,6 +136,48 @@ export function countTaskCompletes(events: { event_type: string }[]): number {
 export function getTimeSessionXp(durationSeconds: number): number {
   const blocks = Math.floor(durationSeconds / 1800); // 30 min = 1800s
   return blocks * XP_VALUES.time_session;
+}
+
+// ============ Habit Streak ============
+
+/**
+ * Compute consecutive-day streak from a sorted array of completion dates.
+ * Dates should be YYYY-MM-DD strings. Returns streak counting backwards from `today`.
+ */
+export function computeHabitStreak(completionDates: string[], today: string): number {
+  if (completionDates.length === 0) return 0;
+
+  const unique = [...new Set(completionDates)].sort().reverse();
+  // Must include today to have a current streak
+  if (unique[0] !== today) return 0;
+
+  let streak = 1;
+  for (let i = 1; i < unique.length; i++) {
+    const prev = new Date(unique[i - 1] + 'T00:00:00');
+    const curr = new Date(unique[i] + 'T00:00:00');
+    const diff = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
+    if (diff === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+/**
+ * Return bonus XP for habit streak milestones.
+ * Only awards bonus at exact milestone thresholds.
+ */
+export function getHabitStreakBonus(consecutiveDays: number): number {
+  const milestones: Record<number, number> = {
+    7: 50,
+    14: 100,
+    30: 200,
+    60: 500,
+    100: 1000,
+  };
+  return milestones[consecutiveDays] ?? 0;
 }
 
 // ============ Helpers ============

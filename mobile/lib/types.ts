@@ -48,7 +48,7 @@ export interface TimeSession {
   created_at: string;
 }
 
-export type XpEventType = 'task_complete' | 'time_session' | 'project_complete' | 'daily_goal_bonus';
+export type XpEventType = 'task_complete' | 'time_session' | 'project_complete' | 'daily_goal_bonus' | 'habit_complete';
 
 export interface GamificationProfile {
   id: string;
@@ -70,6 +70,30 @@ export interface XpEvent {
   project_id: string | null;
   reference_id: string | null;
   created_at: string;
+}
+
+// Habits
+export interface Habit {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  is_archived: boolean;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HabitCompletion {
+  id: string;
+  habit_id: string;
+  completed_date: string; // YYYY-MM-DD
+  created_at: string;
+}
+
+export interface HeatmapDay {
+  date: string; // YYYY-MM-DD
+  count: number;
 }
 
 export interface BoardWithProjects extends Board {

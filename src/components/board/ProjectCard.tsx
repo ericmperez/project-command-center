@@ -3,9 +3,9 @@
 import { Draggable } from '@hello-pangea/dnd';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GitBranch, AlertCircle, GitPullRequest, Clock, Calendar, Timer, Flame, Snowflake } from 'lucide-react';
+import { GitBranch, AlertCircle, GitPullRequest, Clock, Calendar, Timer, Flame, Snowflake, CornerDownRight, ArrowRight } from 'lucide-react';
 import { ScheduleBadge } from '@/components/project/ScheduleBadge';
-import type { Project, SchedulingEstimate } from '@/lib/types';
+import type { Project, ProjectActivity, SchedulingEstimate } from '@/lib/types';
 
 interface ProjectCardProps {
   project: Project;
@@ -13,6 +13,7 @@ interface ProjectCardProps {
   onClick: () => void;
   schedulingEstimate?: SchedulingEstimate | null;
   workRank?: 'most' | 'least';
+  activity?: ProjectActivity;
 }
 
 const projectTypeBadgeColors: Record<string, string> = {
@@ -78,7 +79,7 @@ const workRankStyles = {
   },
 };
 
-export function ProjectCard({ project, index, onClick, schedulingEstimate, workRank }: ProjectCardProps) {
+export function ProjectCard({ project, index, onClick, schedulingEstimate, workRank, activity }: ProjectCardProps) {
   const hasGitHub = !!project.github_repo;
   const lastCommit = project.github_last_commit;
   const hasCompletion = project.completion_percentage > 0;
@@ -229,11 +230,29 @@ export function ProjectCard({ project, index, onClick, schedulingEstimate, workR
                 </div>
               )}
 
-              {/* Last updated */}
-              <div className="flex items-center gap-1 text-[10px] text-zinc-600">
-                <Clock className="w-2.5 h-2.5" />
-                Updated {formatTimeAgo(project.updated_at)}
-              </div>
+              {/* Activity: Left off + Next step */}
+              {activity?.lastActivity || activity?.nextStep ? (
+                <div className="space-y-0.5 pt-0.5">
+                  {activity.lastActivity && (
+                    <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+                      <CornerDownRight className="w-2.5 h-2.5 shrink-0" />
+                      <span className="truncate">{activity.lastActivity.description}</span>
+                      <span className="shrink-0 ml-auto text-zinc-600">{formatTimeAgo(activity.lastActivity.timestamp)}</span>
+                    </div>
+                  )}
+                  {activity.nextStep && (
+                    <div className={`flex items-center gap-1 text-[10px] ${activity.nextStep.type === 'fallback' ? 'text-zinc-600' : 'text-violet-400'}`}>
+                      <ArrowRight className="w-2.5 h-2.5 shrink-0" />
+                      <span className="truncate">{activity.nextStep.description}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-[10px] text-zinc-600">
+                  <Clock className="w-2.5 h-2.5" />
+                  Updated {formatTimeAgo(project.updated_at)}
+                </div>
+              )}
             </CardHeader>
           </Card>
         </div>

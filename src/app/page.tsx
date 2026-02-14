@@ -6,7 +6,8 @@ import { CalendarSidebar } from '@/components/calendar/CalendarSidebar';
 import { GitHubReposPanel } from '@/components/project/GitHubReposPanel';
 import { StatsBar } from '@/components/gamification/StatsBar';
 import { Button } from '@/components/ui/button';
-import { Command, Keyboard, Github } from 'lucide-react';
+import Link from 'next/link';
+import { Command, Keyboard, Github, CalendarCheck } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useGamification } from '@/hooks/useGamification';
 import type { GitHubRepo, ProjectFormData, XpEventType } from '@/lib/types';
@@ -83,6 +84,16 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Link href="/habits">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-zinc-400 border-zinc-700 hover:bg-zinc-800"
+              >
+                <CalendarCheck className="w-4 h-4 mr-2" />
+                Habits
+              </Button>
+            </Link>
             <Button
               variant="outline"
               size="sm"

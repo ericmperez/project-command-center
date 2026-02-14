@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
-import type { BoardWithProjects, Project, SchedulingEstimate } from '@/lib/types';
+import type { BoardWithProjects, Project, ProjectActivity, SchedulingEstimate } from '@/lib/types';
 
 interface BoardColumnProps {
   board: BoardWithProjects;
@@ -13,6 +13,7 @@ interface BoardColumnProps {
   onSelectProject: (project: Project) => void;
   schedulingEstimates?: Record<string, SchedulingEstimate>;
   workRanks?: Record<string, 'most' | 'least'>;
+  projectActivities?: Map<string, ProjectActivity>;
   fullWidth?: boolean;
 }
 
@@ -39,7 +40,7 @@ const columnColors: Record<string, { bg: string; border: string; badge: string }
   },
 };
 
-export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEstimates, workRanks, fullWidth }: BoardColumnProps) {
+export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEstimates, workRanks, projectActivities, fullWidth }: BoardColumnProps) {
   const colors = columnColors[board.name] || columnColors['Backlog'];
   const projectCount = board.projects.length;
 
@@ -89,6 +90,7 @@ export function BoardColumn({ board, onAddProject, onSelectProject, schedulingEs
                   onClick={() => onSelectProject(project)}
                   schedulingEstimate={schedulingEstimates?.[project.id]}
                   workRank={workRanks?.[project.id]}
+                  activity={projectActivities?.get(project.id)}
                 />
               ))}
               {provided.placeholder}

@@ -8,6 +8,7 @@ import { BoardColumn } from './BoardColumn';
 import { ProjectModal } from '@/components/project/ProjectModal';
 import { useGitHubSync } from '@/hooks/useGitHubSync';
 import { useSchedulingEstimate } from '@/hooks/useSchedulingEstimate';
+import { useProjectActivity } from '@/hooks/useProjectActivity';
 import type { Project, ProjectFormData, BoardWithProjects, SchedulingEstimate, XpEventType } from '@/lib/types';
 
 interface ProjectsState {
@@ -64,6 +65,7 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
 
   // Compute scheduling estimates for all projects
   const allProjects = useMemo(() => boards.flatMap((b) => b.projects), [boards]);
+  const activityMap = useProjectActivity(allProjects, demoMode);
   const estimates = useMemo(() => {
     const map: Record<string, SchedulingEstimate> = {};
     for (const p of allProjects) {
@@ -288,6 +290,7 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
                 onSelectProject={handleSelectProject}
                 schedulingEstimates={estimates}
                 workRanks={workRanks}
+                projectActivities={activityMap}
               />
             ))}
           </div>
@@ -305,6 +308,7 @@ export function KanbanBoard({ projectsState, onXpChange }: KanbanBoardProps) {
                 onSelectProject={handleSelectProject}
                 schedulingEstimates={estimates}
                 workRanks={workRanks}
+                projectActivities={activityMap}
                 fullWidth
               />
             )}

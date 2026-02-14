@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { Board, Project, CalendarEvent, ChecklistItem, TimeSession, Meeting, GamificationProfile, XpEvent, XpEventType } from './types';
+import type { Board, Project, CalendarEvent, ChecklistItem, TimeSession, Meeting, GamificationProfile, XpEvent, XpEventType, Habit, HabitCompletion, HeatmapDay } from './types';
 
 // Supabase client configuration
 // These values should be set in your .env.local file
@@ -505,4 +505,172 @@ export async function getXpEventsInRange(start: string, end: string): Promise<Xp
 
   if (error) throw error;
   return data || [];
+}
+
+// ============ Habit Operations ============
+
+export async function getHabits(): Promise<Habit[]> {
+  const { data, error } = await supabase.client
+    .from('habits')
+    .select('*')
+    .eq('is_archived', false)
+    .order('position');
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createHabit(habit: { name: string; icon?: string; color?: string }): Promise<Habit> {
+  const { data: existing } = await supabase.client
+    .from('habits')
+    .select('position')
+    .order('position', { ascending: false })
+    .limit(1);
+
+  const nextPosition = existing && existing.length > 0 ? existing[0].position + 1 : 0;
+
+  const { data, error } = await supabase.client
+    .from('habits')
+    .insert({
+      name: habit.name,
+      icon: habit.icon || '',
+      color: habit.color || '#10b981',
+      position: nextPosition,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateHabit(id: string, updates: Partial<Habit>): Promise<Habit> {
+  const { data, error } = await supabase.client
+    .from('habits')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteHabit(id: string): Promise<void> {
+  const { error } = await supabase.client
+    .from('habits')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function toggleHabitCompletion(
+  habitId: string,
+  date: string
+): Promise<{ completed: boolean; completion: HabitCompletion | null }> {
+  const { data: existing } = await supabase.client
+    .from('habit_completions')
+    .select('*')
+    .eq('habit_id', habitId)
+    .eq('completed_date', date)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.client
+      .from('habit_completions')
+      .delete()
+      .eq('id', existing.id);
+
+    if (error) throw error;
+    return { completed: false, completion: null };
+  } else {
+    const { data, error } = await supabase.client
+      .from('habit_completions')
+      .insert({ habit_id: habitId, completed_date: date })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { completed: true, completion: data };
+  }
+}
+
+export async function getHeatmapData(startDate: string, endDate: string): Promise<HeatmapDay[]> {
+  const { data: completions, error } = await supabase.client
+    .from('habit_completions')
+    .select('completed_date')
+    .gte('completed_date', startDate)
+    .lte('completed_date', endDate);
+
+  if (error) throw error;
+
+  const counts: Record<string, number> = {};
+  for (const row of completions || []) {
+    counts[row.completed_date] = (counts[row.completed_date] || 0) + 1;
+  }
+
+  return Object.entries(counts).map(([date, count]) => ({ date, count }));
+}
+
+export async function getTodayCompletions(today: string): Promise<HabitCompletion[]> {
+  const { data, error } = await supabase.client
+    .from('habit_completions')
+    .select('*')
+    .eq('completed_date', today);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// ============ Batch Queries (for project activity) ============
+
+export async function getAllChecklistItems(): Promise<ChecklistItem[]> {
+  const { data, error } = await supabase.client
+    .from('checklist_items')
+    .select('*')
+    .order('project_id')
+    .order('position');
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getRecentTimeSessions(limit: number = 50): Promise<TimeSession[]> {
+  const { data, error } = await supabase.client
+    .from('time_sessions')
+    .select('*')
+    .not('end_time', 'is', null)
+    .order('start_time', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getUpcomingMeetingsAll(): Promise<Meeting[]> {
+  const twoDaysFromNow = new Date();
+  twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+
+  const { data, error } = await supabase.client
+    .from('meetings')
+    .select('*')
+    .eq('status', 'upcoming')
+    .gte('meeting_date', new Date().toISOString())
+    .lte('meeting_date', twoDaysFromNow.toISOString())
+    .order('meeting_date');
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getHabitCompletionDates(habitId: string): Promise<string[]> {
+  const { data, error } = await supabase.client
+    .from('habit_completions')
+    .select('completed_date')
+    .eq('habit_id', habitId)
+    .order('completed_date', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map((r) => r.completed_date);
 }

@@ -1,6 +1,6 @@
 // Mock data for demo mode (when Supabase is not configured)
 
-import type { Board, Project, CalendarEvent, BoardWithProjects, ChecklistItem, TimeSession, Meeting, GamificationProfile, XpEvent } from './types';
+import type { Board, Project, CalendarEvent, BoardWithProjects, ChecklistItem, TimeSession, Meeting, GamificationProfile, XpEvent, Habit, HabitCompletion, HeatmapDay } from './types';
 
 const now = new Date().toISOString();
 
@@ -460,6 +460,20 @@ export const mockGamificationProfile: GamificationProfile = {
 };
 
 export let mockXpEvents: XpEvent[] = [];
+
+// ============ Habits Mock Data ============
+
+export const mockHabits: Habit[] = [];
+
+export const mockHabitCompletions: HabitCompletion[] = [];
+
+export function getMockHeatmapData(): HeatmapDay[] {
+  return [];
+}
+
+export function getMockTodayCompletions(): Record<string, boolean> {
+  return {};
+}
 
 // Check if we're in demo mode
 export function isDemoMode(): boolean {
